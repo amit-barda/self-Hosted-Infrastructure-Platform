@@ -1,0 +1,65 @@
+# Traefik Dynamic Configuration - Security & Performance
+# Author: Senior DevOps Engineer
+# Version: 1.0.0
+
+http:
+  middlewares:
+    # OWASP Security Headers
+    secure-headers:
+      headers:
+        # XSS Protection
+        browserXssFilter: true
+        contentTypeNosniff: true
+        
+        # Frame Protection
+        frameDeny: true
+        customFrameOptionsValue: "SAMEORIGIN"
+        
+        # SSL/TLS Security
+        sslRedirect: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+        
+        # Content Security Policy
+        contentSecurityPolicy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none';"
+        
+        # Privacy & Security Headers
+        referrerPolicy: "strict-origin-when-cross-origin"
+        permissionsPolicy: "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+        
+        # Additional Security Headers
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+        customResponseHeaders:
+          X-Content-Type-Options: "nosniff"
+          X-Frame-Options: "SAMEORIGIN"
+          X-XSS-Protection: "1; mode=block"
+    
+    # Rate Limiting
+    rate-limit:
+      rateLimit:
+        burst: 100
+        average: 50
+    
+    # Compression
+    compress:
+      compress: {}
+    
+    # CORS Headers
+    cors:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        accessControlAllowHeaders:
+          - Authorization
+          - Content-Type
+          - X-Requested-With
+        accessControlAllowOriginList:
+          - "https://*.${DOMAIN}"
+        accessControlMaxAge: 86400 

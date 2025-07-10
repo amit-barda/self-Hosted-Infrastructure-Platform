@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Validate Docker Compose
+      run: |
+        docker-compose config
+        
+    - name: Check YAML syntax
+      run: |
+        # Check all YAML files for syntax errors
+        for file in $(find . -name "*.yml" -o -name "*.yaml"); do
+          echo "Checking $file"
+          python3 -c "import yaml; yaml.safe_load(open('$file'))"
+        done
+        
+    - name: Validate setup script
+      run: |
+        # Check if setup script is executable and has correct syntax
+        chmod +x setup.sh
+        bash -n setup.sh
+        
+    - name: Check Makefile
+      run: |
+        # Validate Makefile syntax
+        make -n help
+        
+    - name: Test Docker Compose services
+      run: |
+        # Test that all services can be pulled
+        docker-compose pull --dry-run
+        
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Run security checks
+      run: |
+        # Check for common security issues
+        echo "Checking for sensitive data in files..."
+        if grep -r "password\|secret\|key" . --exclude-dir=.git --exclude=*.md; then
+          echo "⚠️  Potential sensitive data found"
+        else
+          echo "✅ No obvious sensitive data found"
+        fi
+        
+    - name: Check file permissions
+      run: |
+        # Ensure sensitive files have correct permissions
+        if [ -f traefik/acme.json ]; then
+          perms=$(stat -c %a traefik/acme.json)
+          if [ "$perms" != "600" ]; then
+            echo "⚠️  acme.json should have 600 permissions"
+          else
+            echo "✅ acme.json has correct permissions"
+          fi
+        fi 

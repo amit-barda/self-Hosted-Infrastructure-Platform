@@ -1,0 +1,161 @@
+version: '3.8'
+
+services:
+  # Traefik Reverse Proxy - Enterprise-grade load balancer
+  traefik:
+    image: traefik:v2.10-alpine
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "80:80"
+      - "443:443"
+      - "127.0.0.1:8080:8080"  # Dashboard bound to localhost only
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic_conf.yml:/etc/traefik/dynamic_conf.yml:ro
+      - ./traefik/acme.json:/acme.json
+    networks:
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+      - "traefik.http.routers.traefik.middlewares=traefik-auth,secure-headers"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_AUTH}"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Portainer - Container Orchestration Platform
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./portainer/data:/data
+    networks:
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.portainer.rule=Host(`portainer.${DOMAIN}`)"
+      - "traefik.http.routers.portainer.entrypoints=websecure"
+      - "traefik.http.routers.portainer.tls.certresolver=letsencrypt"
+      - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+      - "traefik.http.routers.portainer.middlewares=secure-headers"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9000/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Gitea - Enterprise Git Repository Management
+  gitea:
+    image: gitea/gitea:latest
+    container_name: gitea
+    restart: unless-stopped
+    user: "1000:1000"
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__database__DB_TYPE=sqlite3
+      - GITEA__database__PATH=/data/gitea/gitea.db
+      - GITEA__server__DOMAIN=git.${DOMAIN}
+      - GITEA__server__ROOT_URL=https://git.${DOMAIN}/
+      - GITEA__server__ENABLE_GZIP=true
+      - GITEA__security__INSTALL_LOCK=true
+      - GITEA__service__DISABLE_REGISTRATION=true
+    volumes:
+      - ./gitea/data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gitea.rule=Host(`git.${DOMAIN}`)"
+      - "traefik.http.routers.gitea.entrypoints=websecure"
+      - "traefik.http.routers.gitea.tls.certresolver=letsencrypt"
+      - "traefik.http.services.gitea.loadbalancer.server.port=3000"
+      - "traefik.http.routers.gitea.middlewares=secure-headers"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/v1/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Vaultwarden - Enterprise Password Management
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    user: "1000:1000"
+    environment:
+      - WEBSOCKET_ENABLED=true
+      - SIGNUPS_ALLOWED=false
+      - DOMAIN=https://vault.${DOMAIN}
+      - ADMIN_TOKEN=${VAULTWARDEN_ADMIN_TOKEN}
+      - DISABLE_ICON_DOWNLOAD=false
+      - ICON_CACHE_TTL=2592000
+      - DATA_FOLDER=/data
+    volumes:
+      - ./vaultwarden/data:/data
+    networks:
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vaultwarden.rule=Host(`vault.${DOMAIN}`)"
+      - "traefik.http.routers.vaultwarden.entrypoints=websecure"
+      - "traefik.http.routers.vaultwarden.tls.certresolver=letsencrypt"
+      - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
+      - "traefik.http.routers.vaultwarden.middlewares=secure-headers"
+      - "traefik.http.routers.vaultwarden-ws.rule=Host(`vault.${DOMAIN}`) && PathPrefix(`/notifications/hub`)"
+      - "traefik.http.routers.vaultwarden-ws.entrypoints=websecure"
+      - "traefik.http.routers.vaultwarden-ws.tls.certresolver=letsencrypt"
+      - "traefik.http.services.vaultwarden-ws.loadbalancer.server.port=3012"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/alive"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Whoami - Health Check & Debugging Service
+  whoami:
+    image: traefik/whoami:latest
+    container_name: whoami
+    restart: unless-stopped
+    networks:
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami.rule=Host(`whoami.${DOMAIN}`)"
+      - "traefik.http.routers.whoami.entrypoints=websecure"
+      - "traefik.http.routers.whoami.tls.certresolver=letsencrypt"
+      - "traefik.http.services.whoami.loadbalancer.server.port=80"
+      - "traefik.http.routers.whoami.middlewares=secure-headers"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  traefik-public:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16 

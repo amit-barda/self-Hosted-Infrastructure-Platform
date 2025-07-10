@@ -1,0 +1,26 @@
+# Environment variables
+.env
+
+# SSL certificates
+traefik/acme.json
+
+# Service data directories
+portainer/data/
+gitea/data/
+vaultwarden/data/
+
+# Logs
+*.log
+
+# Docker volumes
+data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo 
