@@ -248,18 +248,7 @@ docker-compose exec portainer cat /proc/1/limits
 ## 📝 License
 
 MIT License - feel free to use this project for your own infrastructure needs.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
-## 📞 Support
-
-For issues and questions, please open an issue on GitHub.
-
+ 
 ## 🔗 Repository
 
 **GitHub**: [https://github.com/amit-barda/self-Hosted-Infrastructure-Platform](https://github.com/amit-barda/self-Hosted-Infrastructure-Platform)
