@@ -29,9 +29,7 @@ This project has been successfully created as a comprehensive self-hosted infras
 
 ### Documentation
 - `README.md` - Comprehensive English documentation
-- `README.he.md` - Hebrew documentation
 - `CONTRIBUTING.md` - Contribution guidelines
-- `SECURITY.md` - Security policy
 - `CHANGELOG.md` - Version tracking
 - `LICENSE` - MIT License
 
