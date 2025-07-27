@@ -1,5 +1,5 @@
 # Development Override Configuration
-# Copy this file to docker-compose.override.yml to enable development features
+# Copy this file to docker-compose.override.yml to enable development features and testing
 
 version: '3.8'
 
