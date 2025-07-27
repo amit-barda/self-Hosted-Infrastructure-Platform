@@ -55,9 +55,9 @@ jobs:
         # Check for common security issues
         echo "Checking for sensitive data in files..."
         if grep -r "password\|secret\|key" . --exclude-dir=.git --exclude=*.md; then
-          echo "⚠️  Potential sensitive data found"
+          echo "Potential sensitive data found"
         else
-          echo "✅ No obvious sensitive data found"
+          echo "No obvious sensitive data found"
         fi
         
     - name: Check file permissions
@@ -66,8 +66,8 @@ jobs:
         if [ -f traefik/acme.json ]; then
           perms=$(stat -c %a traefik/acme.json)
           if [ "$perms" != "600" ]; then
-            echo "⚠️  acme.json should have 600 permissions"
+            echo "acme.json should have 600 permissions"
           else
-            echo "✅ acme.json has correct permissions"
+            echo "acme.json has correct permissions"
           fi
         fi 
