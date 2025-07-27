@@ -28,8 +28,7 @@ This project has been successfully created as a comprehensive self-hosted infras
 - `.env.example` - Environment variables template
 
 ### Documentation
-- `README.md` - Comprehensive English documentation
-- `CONTRIBUTING.md` - Contribution guidelines
+- `README.md` - documentation
 - `CHANGELOG.md` - Version tracking
 - `LICENSE` - MIT License
 
